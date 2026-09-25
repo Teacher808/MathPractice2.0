@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Math Practice Quiz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Prevent number input arrows */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    
+    /* Improve touch response on mobile */
+    button { touch-action: manipulation; }
+    
+    /* Custom Scrollbar for the settings panel */
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800 overflow-x-hidden">
+
+  <!-- ================= SETUP SCREEN ================= -->
+  <div id="setup-screen" class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 py-10">
+    <div class="bg-white rounded-3xl shadow-xl p-6 sm:p-8 max-w-3xl w-full mx-auto">
+      <div class="flex items-center justify-center space-x-3 mb-6 sm:mb-8 text-blue-600">
+        <i class="fa-solid fa-graduation-cap text-3xl sm:text-4xl"></i>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-center text-slate-800">Math Practice Pro</h1>
+      </div>
+
+      <div class="mb-5 sm:mb-6">
+        <label class="block text-base sm:text-lg font-semibold text-slate-700 mb-2">Participant Name</label>
+        <input type="text" id="user-name" placeholder="Enter your name..." class="w-full p-3 border-2 border-slate-200 rounded-xl text-base sm:text-lg focus:border-blue-500 outline-none transition-colors">
+      </div>
+
+      <!-- Skills Selector -->
+      <div class="mb-6">
+        <label class="block text-base sm:text-lg font-semibold text-slate-700 mb-2">Select Skills to Practice</label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3" id="modes-container">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Dynamic Settings Panels -->
+      <div id="settings-panels" class="bg-slate-50 rounded-2xl p-4 sm:p-5 mb-6 border border-slate-200 hidden">
+        <h3 class="font-bold text-slate-700 mb-4 border-b border-slate-200 pb-2"><i class="fa-solid fa-sliders mr-2"></i>Skill Settings</h3>
+        
+        <!-- Addition Settings -->
+        <div id="add-settings" class="mb-5 hidden">
+          <label class="block font-semibold text-slate-700 mb-2">Addition Formats</label>
+          <div class="flex flex-wrap gap-2 mb-3" id="add-digits-container"></div>
+          <label class="flex items-center space-x-2 cursor-pointer select-none">
+            <input type="checkbox" id="add-regroup" class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" checked>
+            <span class="font-medium text-slate-600">Allow Regrouping (Carrying)</span>
+          </label>
+        </div>
+
+        <!-- Subtraction Settings -->
+        <div id="sub-settings" class="mb-5 hidden">
+          <label class="block font-semibold text-slate-700 mb-2">Subtraction Formats</label>
+          <div class="flex flex-wrap gap-2 mb-3" id="sub-digits-container"></div>
+          <label class="flex items-center space-x-2 cursor-pointer select-none">
+            <input type="checkbox" id="sub-regroup" class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" checked>
+            <span class="font-medium text-slate-600">Allow Regrouping (Borrowing)</span>
+          </label>
+        </div>
+
+        <!-- Multiplication Settings -->
+        <div id="mult-settings" class="mb-5 hidden">
+          <label class="block font-semibold text-slate-700 mb-2">Multiplication Tables (×)</label>
+          <div id="mult-grid" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Division Settings -->
+        <div id="div-settings" class="mb-5 hidden">
+          <label class="block font-semibold text-slate-700 mb-2">Division Tables (÷)</label>
+          <div id="div-grid" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Exponents, Decimals, Fractions info -->
+        <div id="advanced-info" class="text-sm text-slate-500 italic hidden">
+          Advanced options (Exponents, Decimals, Fractions) generate randomized standard problems automatically.
+        </div>
+      </div>
+
+      <div class="mb-6 sm:mb-8">
+        <label class="block text-base sm:text-lg font-semibold text-slate-700 mb-2">Number of Questions</label>
+        <input type="number" id="num-questions" value="10" min="1" max="100" inputmode="numeric" class="w-full sm:w-48 p-3 border-2 border-slate-200 rounded-xl text-base sm:text-lg focus:border-blue-500 outline-none transition-colors">
+      </div>
+
+      <button onclick="startQuiz()" class="w-full bg-green-500 hover:bg-green-600 text-white text-lg sm:text-xl font-bold py-3 sm:py-4 rounded-2xl flex items-center justify-center space-x-2 transition-transform transform active:scale-95 shadow-md">
+        <i class="fa-solid fa-play"></i>
+        <span>Start Practice</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= PLAYING SCREEN ================= -->
+  <div id="playing-screen" class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 hidden">
+    <div class="bg-white rounded-3xl shadow-xl p-6 sm:p-8 max-w-2xl w-full mx-auto">
+      
+      <div class="flex justify-between items-center mb-5 sm:mb-6">
+        <span id="progress-text" class="text-sm sm:text-base text-slate-500 font-medium">Question 1 of 10</span>
+        <button onclick="showScreen('setup')" class="flex items-center space-x-1 px-3 py-2 text-sm sm:text-base text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors font-semibold">
+          <i class="fa-solid fa-xmark"></i><span>Exit</span>
+        </button>
+      </div>
+      
+      <div class="w-full bg-slate-100 h-2.5 rounded-full mb-8 overflow-hidden">
+        <div id="progress-bar" class="bg-blue-500 h-full transition-all duration-500 ease-out w-0"></div>
+      </div>
+
+      <!-- Question Display Container -->
+      <div class="text-center mb-10 w-full min-h-[5rem] flex items-center justify-center">
+        <div id="question-text" class="text-4xl sm:text-6xl font-black text-slate-800 tracking-wider flex items-center justify-center flex-wrap gap-x-3 gap-y-2">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <div class="flex flex-col items-center w-full max-w-sm mx-auto">
+        <!-- Input with Helper Buttons -->
+        <div class="flex items-center space-x-2 mb-6 w-full justify-center">
+          <button id="btn-minus" onclick="appendInput('-')" class="w-12 h-14 sm:w-14 sm:h-16 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-2xl font-bold transition-colors hidden">-</button>
+          
+          <input type="text" id="answer-input" placeholder="?" inputmode="decimal" autocomplete="off" autocorrect="off" class="w-full max-w-[12rem] text-center text-3xl sm:text-4xl font-bold p-3 sm:p-4 border-4 border-slate-200 rounded-2xl focus:border-blue-500 outline-none transition-colors">
+          
+          <button id="btn-slash" onclick="appendInput('/')" class="w-12 h-14 sm:w-14 sm:h-16 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xl font-bold transition-colors hidden">/</button>
+        </div>
+        
+        <button id="submit-btn" onclick="handleSubmit()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 sm:py-4 rounded-xl text-base sm:text-lg transition-transform transform active:scale-95 shadow-md">
+          Submit Answer
+        </button>
+        <button id="next-btn" onclick="handleNext()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 sm:py-4 rounded-xl text-base sm:text-lg transition-transform transform active:scale-95 shadow-md hidden flex items-center justify-center space-x-2">
+          <span id="next-btn-text">Next Question</span> <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <div id="feedback-box" class="min-h-[4rem] mt-6 flex items-center justify-center opacity-0 transition-opacity w-full">
+        <div id="feedback-content" class="flex items-center space-x-2 text-base sm:text-lg font-bold px-4 py-3 rounded-xl text-center w-full justify-center shadow-sm">
+          <i id="feedback-icon" class="fa-solid shrink-0"></i>
+          <span id="feedback-text"></span>
+        </div>
+      </div>
+
+      <div id="attempts-container" class="flex justify-center space-x-3 mt-4">
+        <div class="attempt-dot w-3 h-3 rounded-full bg-blue-500 transition-colors"></div>
+        <div class="attempt-dot w-3 h-3 rounded-full bg-blue-500 transition-colors"></div>
+        <div class="attempt-dot w-3 h-3 rounded-full bg-blue-500 transition-colors"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= RESULTS SCREEN ================= -->
+  <div id="results-screen" class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 hidden">
+    <div class="bg-white rounded-3xl shadow-xl p-6 sm:p-10 max-w-lg w-full text-center mx-auto">
+      
+      <div class="mb-5 sm:mb-6">
+        <div id="result-icon-container" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-4 bg-blue-100 text-blue-500">
+          <i id="result-icon" class="fa-solid fa-award text-4xl sm:text-5xl"></i>
+        </div>
+        <h2 id="result-message" class="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-2">Good effort!</h2>
+      </div>
+
+      <div class="bg-slate-50 rounded-2xl p-5 sm:p-6 mb-8 shadow-inner border border-slate-100">
+        <div class="text-5xl sm:text-6xl font-black text-blue-500 mb-2">
+          <span id="final-score">0</span> / <span id="final-total">0</span>
+        </div>
+        <div id="final-percentage" class="text-sm sm:text-base text-slate-500 font-medium mb-4 pb-4 border-b border-slate-200">Total Correct Answers (0%)</div>
+        
+        <!-- Detailed Stats Breakdown Grid -->
+        <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm font-semibold text-slate-600 text-left">
+           <!-- Injected dynamically -->
+        </div>
+
+        <div id="saving-indicator" class="mt-5 text-sm text-blue-500 font-medium flex items-center justify-center animate-pulse bg-blue-50 py-2 rounded-lg">
+          <i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving results...
+        </div>
+      </div>
+
+      <button onclick="showScreen('setup')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 sm:py-4 rounded-xl text-lg transition-transform transform active:scale-95 flex items-center justify-center space-x-2 shadow-md">
+        <i class="fa-solid fa-rotate-right"></i>
+        <span>Practice Again</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <script>
+    // --- State & Configuration ---
+    const SKILLS = [
+      { id: 'add', label: 'Addition', icon: 'fa-plus' },
+      { id: 'sub', label: 'Subtraction', icon: 'fa-minus' },
+      { id: 'mult', label: 'Multiplication', icon: 'fa-xmark' },
+      { id: 'div', label: 'Division', icon: 'fa-divide' },
+      { id: 'exp', label: 'Exponents', icon: 'fa-superscript' },
+      { id: 'dec', label: 'Decimals', icon: 'fa-circle-dot' },
+      { id: 'frac', label: 'Fractions', icon: 'fa-chart-pie' }
+    ];
+
+    const config = {
+      modes: ['add', 'sub'], // Default selections
+      add: { digits: [2, 3], regroup: true },
+      sub: { digits: [2, 3], regroup: true },
+      multTables: [2, 3, 4, 5],
+      divTables: [2, 5]
+    };
+
+    let state = {
+      questions: [],
+      currentIndex: 0,
+      attemptsLeft: 3,
+      score: 0,
+      stats: {}, // reset dynamically
+      isAnswered: false
+    };
+
+    // --- Setup UI Initializers ---
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSkillButtons();
+      renderDigitSelectors('add');
+      renderDigitSelectors('sub');
+      renderTableSelectors('mult');
+      renderTableSelectors('div');
+      updateSettingsVisibility();
+
+      // Keyboard submission
+      document.getElementById('answer-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (state.isAnswered) handleNext();
+          else handleSubmit();
+        }
+      });
+    });
+
+    // Toggle main skill modes
+    function toggleMode(modeId) {
+      if (config.modes.includes(modeId)) {
+        if(config.modes.length > 1) { // Prevent unselecting everything
+           config.modes = config.modes.filter(m => m !== modeId);
+        }
+      } else {
+        config.modes.push(modeId);
+      }
+      renderSkillButtons();
+      updateSettingsVisibility();
+    }
+
+    function renderSkillButtons() {
+      const container = document.getElementById('modes-container');
+      container.innerHTML = '';
+      SKILLS.forEach(skill => {
+        const isActive = config.modes.includes(skill.id);
+        const btn = document.createElement('button');
+        btn.onclick = () => toggleMode(skill.id);
+        btn.innerHTML = `<i class="fa-solid ${skill.icon} mb-1 sm:mb-2 text-lg sm:text-xl"></i><br><span class="text-xs sm:text-sm">${skill.label}</span>`;
+        if (isActive) {
+          btn.className = "p-3 rounded-xl font-bold transition-all bg-blue-500 text-white shadow-md transform scale-105";
+        } else {
+          btn.className = "p-3 rounded-xl font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200";
+        }
+        container.appendChild(btn);
+      });
+    }
+
+    function updateSettingsVisibility() {
+      const panels = document.getElementById('settings-panels');
+      const showAdd = config.modes.includes('add');
+      const showSub = config.modes.includes('sub');
+      const showMult = config.modes.includes('mult');
+      const showDiv = config.modes.includes('div');
+      const showAdv = config.modes.some(m => ['exp','dec','frac'].includes(m));
+
+      if (showAdd || showSub || showMult || showDiv || showAdv) {
+        panels.classList.remove('hidden');
+      } else {
+        panels.classList.add('hidden');
+      }
+
+      document.getElementById('add-settings').classList.toggle('hidden', !showAdd);
+      document.getElementById('sub-settings').classList.toggle('hidden', !showSub);
+      document.getElementById('mult-settings').classList.toggle('hidden', !showMult);
+      document.getElementById('div-settings').classList.toggle('hidden', !showDiv);
+      document.getElementById('advanced-info').classList.toggle('hidden', !showAdv);
+      
+      // Update config object bindings for regrouping checkboxes
+      document.getElementById('add-regroup').checked = config.add.regroup;
+      document.getElementById('sub-regroup').checked = config.sub.regroup;
+      
+      // Attach listeners explicitly
+      document.getElementById('add-regroup').onchange = (e) => config.add.regroup = e.target.checked;
+      document.getElementById('sub-regroup').onchange = (e) => config.sub.regroup = e.target.checked;
+    }
+
+    function toggleDigit(type, digits) {
+      const arr = config[type].digits;
+      const index = arr.indexOf(digits);
+      if (index > -1) {
+        if(arr.length > 1) arr.splice(index, 1); // keep at least 1
+      } else {
+        arr.push(digits);
+      }
+      renderDigitSelectors(type);
+    }
+
+    function renderDigitSelectors(type) {
+      const container = document.getElementById(`${type}-digits-container`);
+      container.innerHTML = '';
+      [2, 3, 4].forEach(d => {
+        const isSelected = config[type].digits.includes(d);
+        const btn = document.createElement('button');
+        btn.innerText = `${d}-Digit`;
+        btn.onclick = () => toggleDigit(type, d);
+        if (isSelected) {
+          btn.className = "py-1.5 px-3 rounded-lg text-sm font-bold bg-indigo-500 text-white shadow transition-all";
+        } else {
+          btn.className = "py-1.5 px-3 rounded-lg text-sm font-semibold bg-slate-200 text-slate-600 hover:bg-slate-300 transition-all";
+        }
+        container.appendChild(btn);
+      });
+    }
+
+    function toggleTable(type, num) {
+      const arr = config[type + 'Tables'];
+      const index = arr.indexOf(num);
+      if (index > -1) {
+         if(arr.length > 1) arr.splice(index, 1);
+      } else {
+         arr.push(num);
+      }
+      renderTableSelectors(type);
+    }
+
+    function renderTableSelectors(type) {
+      const grid = document.getElementById(`${type}-grid`);
+      grid.innerHTML = '';
+      for (let i = 1; i <= 12; i++) {
+        const isSelected = config[type + 'Tables'].includes(i);
+        const btn = document.createElement('button');
+        btn.innerText = i;
+        btn.onclick = () => toggleTable(type, i);
+        if (isSelected) {
+          btn.className = "w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-sm sm:text-base font-bold bg-indigo-500 text-white shadow transition-all";
+        } else {
+          btn.className = "w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-sm sm:text-base font-semibold bg-slate-200 text-slate-600 hover:bg-slate-300 transition-all";
+        }
+        grid.appendChild(btn);
+      }
+    }
+
+    // Input Helper
+    function appendInput(char) {
+      const input = document.getElementById('answer-input');
+      input.value += char;
+      input.focus();
+    }
+
+    // --- Question Generators ---
+    const generators = {
+      add: () => {
+        const d = config.add.digits[Math.floor(Math.random() * config.add.digits.length)];
+        let n1 = '', n2 = '';
+        if (config.add.regroup) {
+           const min = Math.pow(10, d-1);
+           const max = Math.pow(10, d) - 1;
+           n1 = (Math.floor(Math.random() * (max - min + 1)) + min).toString();
+           n2 = (Math.floor(Math.random() * (max - min + 1)) + min).toString();
+        } else {
+           for(let i=0; i<d; i++) {
+              let limit = (i===0) ? 8 : 9; // prevent max digit on start to avoid regroup limits mapping to 0
+              let d1 = Math.floor(Math.random() * limit);
+              if(i===0 && d1===0) d1=1; 
+              let d2 = Math.floor(Math.random() * (10 - d1));
+              if(i===0 && d2===0) d2=1;
+              n1 += d1; n2 += d2;
+           }
+        }
+        const sum = parseInt(n1) + parseInt(n2);
+        return { type: 'add', text: `${n1} + ${n2}`, answer: sum, exactStr: sum.toString() };
+      },
+      sub: () => {
+        const d = config.sub.digits[Math.floor(Math.random() * config.sub.digits.length)];
+        let n1 = '', n2 = '';
+        if (config.sub.regroup) {
+           const min = Math.pow(10, d-1);
+           const max = Math.pow(10, d) - 1;
+           let a = Math.floor(Math.random() * (max - min + 1)) + min;
+           let b = Math.floor(Math.random() * (max - min + 1)) + min;
+           n1 = Math.max(a, b).toString();
+           n2 = Math.min(a, b).toString();
+        } else {
+           for(let i=0; i<d; i++) {
+              let d1 = Math.floor(Math.random() * 10);
+              if(i===0) d1 = Math.floor(Math.random() * 9) + 1;
+              let d2 = Math.floor(Math.random() * (d1 + 1));
+              if(i===0 && d2===0 && d1 > 1) d2 = 1; // Try avoid leading zero subtraction if possible
+              n1 += d1; n2 += d2;
+           }
+        }
+        const diff = parseInt(n1) - parseInt(n2);
+        return { type: 'sub', text: `${n1} - ${n2}`, answer: diff, exactStr: diff.toString() };
+      },
+      mult: () => {
+        const table = config.multTables[Math.floor(Math.random() * config.multTables.length)];
+        const multiplier = Math.floor(Math.random() * 12) + 1;
+        const ans = table * multiplier;
+        // Randomize order for display sometimes
+        const text = Math.random() > 0.5 ? `${table} × ${multiplier}` : `${multiplier} × ${table}`;
+        return { type: 'mult', text: text, answer: ans, exactStr: ans.toString() };
+      },
+      div: () => {
+        const table = config.divTables[Math.floor(Math.random() * config.divTables.length)];
+        const multiplier = Math.floor(Math.random() * 12) + 1;
+        const total = table * multiplier;
+        return { type: 'div', text: `${total} ÷ ${table}`, answer: multiplier, exactStr: multiplier.toString() };
+      },
+      exp: () => {
+        const base = Math.floor(Math.random() * 9) + 2; // 2-10
+        const exp = Math.floor(Math.random() * 3) + 1; // 1-3
+        const ans = Math.pow(base, exp);
+        return { type: 'exp', text: `${base}<sup class="text-3xl sm:text-4xl text-slate-600">${exp}</sup>`, answer: ans, exactStr: ans.toString() };
+      },
+      dec: () => {
+        const isAdd = Math.random() > 0.5;
+        let n1 = (Math.random() * 20 + 1).toFixed(1);
+        let n2 = (Math.random() * 20 + 1).toFixed(1);
+        if(!isAdd && parseFloat(n1) < parseFloat(n2)) {
+           let temp = n1; n1 = n2; n2 = temp;
+        }
+        let ans = isAdd ? (parseFloat(n1) + parseFloat(n2)) : (parseFloat(n1) - parseFloat(n2));
+        ans = Math.round(ans * 10) / 10;
+        return { type: 'dec', text: `${n1} ${isAdd ? '+' : '-'} ${n2}`, answer: ans, exactStr: ans.toString() };
+      },
+      frac: () => {
+        const den = Math.floor(Math.random() * 8) + 3; // 3 to 10
+        const num1 = Math.floor(Math.random() * (den-1)) + 1;
+        const num2 = Math.floor(Math.random() * (den-1)) + 1;
+        const isAdd = Math.random() > 0.5;
+        
+        let finalNum1 = num1, finalNum2 = num2;
+        if(!isAdd && num1 < num2) { finalNum1 = num2; finalNum2 = num1; }
+        
+        const ansFloat = isAdd ? (finalNum1 + finalNum2)/den : (finalNum1 - finalNum2)/den;
+        const exactNumerator = isAdd ? (finalNum1 + finalNum2) : (finalNum1 - finalNum2);
+        
+        const html = `
+          <div class="inline-flex flex-col items-center align-middle text-2xl sm:text-4xl">
+            <span class="border-b-[3px] border-slate-800 px-1 leading-tight">${finalNum1}</span>
+            <span class="leading-tight mt-1">${den}</span>
+          </div> 
+          <span class="align-middle mx-3 text-3xl sm:text-5xl">${isAdd ? '+' : '-'}</span> 
+          <div class="inline-flex flex-col items-center align-middle text-2xl sm:text-4xl">
+            <span class="border-b-[3px] border-slate-800 px-1 leading-tight">${finalNum2}</span>
+            <span class="leading-tight mt-1">${den}</span>
+          </div>`;
+          
+        return { type: 'frac', text: html, answer: ansFloat, exactStr: `${exactNumerator}/${den}`, allowFracInput: true };
+      }
+    };
+
+    // --- Core Logic ---
+    function startQuiz() {
+      const userName = document.getElementById('user-name').value.trim();
+      const numQs = parseInt(document.getElementById('num-questions').value) || 10;
+
+      if (!userName) return alert("Please enter your participant name.");
+      if (config.modes.length === 0) return alert("Please select at least one skill to practice.");
+
+      // Reset Stats Tracking
+      state.stats = { 
+        addScore:0, addTotal:0, subScore:0, subTotal:0, 
+        multScore:0, multTotal:0, divScore:0, divTotal:0,
+        expScore:0, expTotal:0, decScore:0, decTotal:0,
+        fracScore:0, fracTotal:0
+      };
+      
+      state.questions = [];
+      for (let i = 0; i < numQs; i++) {
+        const type = config.modes[Math.floor(Math.random() * config.modes.length)];
+        state.stats[`${type}Total`]++;
+        state.questions.push(generators[type]());
+      }
+
+      state.currentIndex = 0;
+      state.score = 0;
+      
+      loadQuestion();
+      showScreen('playing');
+    }
+
+    function loadQuestion() {
+      state.isAnswered = false;
+      state.attemptsLeft = 3;
+      
+      const q = state.questions[state.currentIndex];
+      
+      document.getElementById('question-text').innerHTML = `<span>${q.text}</span> <span class="text-blue-500 mx-2">=</span> <span>?</span>`;
+      document.getElementById('progress-text').innerText = `Question ${state.currentIndex + 1} of ${state.questions.length}`;
+      document.getElementById('progress-bar').style.width = `${(state.currentIndex / state.questions.length) * 100}%`;
+      
+      const input = document.getElementById('answer-input');
+      input.value = '';
+      input.disabled = false;
+      input.classList.remove('bg-green-50', 'text-green-600', 'border-green-400', 'bg-red-50', 'text-red-600', 'border-red-400');
+      input.classList.add('border-slate-200');
+      
+      // Show/Hide input helper buttons based on question type
+      document.getElementById('btn-slash').classList.toggle('hidden', !q.allowFracInput);
+      document.getElementById('btn-minus').classList.toggle('hidden', q.type !== 'dec' && q.type !== 'sub');
+
+      document.getElementById('submit-btn').classList.remove('hidden');
+      document.getElementById('next-btn').classList.add('hidden');
+      document.getElementById('feedback-box').classList.add('opacity-0');
+      document.getElementById('attempts-container').classList.remove('hidden');
+      
+      updateAttemptsUI();
+      setTimeout(() => input.focus(), 100);
+    }
+
+    function updateAttemptsUI() {
+      const dots = document.querySelectorAll('.attempt-dot');
+      dots.forEach((dot, index) => {
+        dot.className = `attempt-dot w-3 h-3 rounded-full transition-colors ${index < state.attemptsLeft ? 'bg-blue-500' : 'bg-slate-200'}`;
+      });
+    }
+
+    function evaluateAnswer(userStr, q) {
+      userStr = userStr.trim();
+      if(userStr === '') return false;
+      if(userStr === q.exactStr) return true; // Exact match catches basic formats immediately
+
+      let userFloat;
+      if(userStr.includes('/')) {
+        const parts = userStr.split('/');
+        if(parts.length !== 2) return false;
+        const n = parseFloat(parts[0]);
+        const d = parseFloat(parts[1]);
+        if(d === 0 || isNaN(n) || isNaN(d)) return false;
+        userFloat = n / d;
+      } else {
+        userFloat = parseFloat(userStr);
+      }
+
+      if(isNaN(userFloat)) return false;
+      // Precision check (handles rounding logic)
+      return Math.abs(userFloat - q.answer) < 0.001;
+    }
+
+    function handleSubmit() {
+      if (state.isAnswered) return;
+      const inputVal = document.getElementById('answer-input').value;
+      if (inputVal === '') return;
+
+      const q = state.questions[state.currentIndex];
+      const isCorrect = evaluateAnswer(inputVal, q);
+
+      if (isCorrect) {
+        state.score++;
+        state.stats[`${q.type}Score`]++;
+        
+        showFeedback('success', 'Brilliant! That is correct.');
+        document.getElementById('question-text').innerHTML = `<span>${q.text}</span> <span class="text-blue-500 mx-2">=</span> <span class="text-green-500">${inputVal}</span>`;
+        finalizeQuestion(true);
+      } else {
+        state.attemptsLeft--;
+        updateAttemptsUI();
+        
+        if (state.attemptsLeft > 0) {
+          showFeedback('warning', `Not quite. Try again! (${state.attemptsLeft} attempt${state.attemptsLeft > 1 ? 's' : ''} left)`);
+          const input = document.getElementById('answer-input');
+          input.value = '';
+          input.focus();
+        } else {
+          // Provide friendly rendering for exact fractional string answers
+          let displayAns = q.exactStr; 
+          showFeedback('error', `Out of attempts! The correct answer was ${displayAns}.`);
+          document.getElementById('answer-input').value = displayAns;
+          document.getElementById('question-text').innerHTML = `<span>${q.text}</span> <span class="text-blue-500 mx-2">=</span> <span class="text-red-500">${displayAns}</span>`;
+          finalizeQuestion(false);
+        }
+      }
+    }
+
+    function showFeedback(type, message) {
+      const box = document.getElementById('feedback-box');
+      const content = document.getElementById('feedback-content');
+      const icon = document.getElementById('feedback-icon');
+      const text = document.getElementById('feedback-text');
+
+      box.classList.remove('opacity-0');
+      text.innerText = message;
+
+      if (type === 'success') {
+        content.className = 'flex items-center space-x-2 text-sm sm:text-lg font-bold px-4 py-3 rounded-xl text-green-700 bg-green-100 text-center w-full justify-center shadow-sm';
+        icon.className = 'fa-solid fa-circle-check text-xl shrink-0';
+      } else if (type === 'error') {
+        content.className = 'flex items-center space-x-2 text-sm sm:text-lg font-bold px-4 py-3 rounded-xl text-red-700 bg-red-100 text-center w-full justify-center shadow-sm';
+        icon.className = 'fa-solid fa-circle-xmark text-xl shrink-0';
+      } else {
+        content.className = 'flex items-center space-x-2 text-sm sm:text-lg font-bold px-4 py-3 rounded-xl text-amber-700 bg-amber-100 text-center w-full justify-center shadow-sm';
+        icon.className = 'fa-solid fa-circle-exclamation text-xl shrink-0';
+      }
+    }
+
+    function finalizeQuestion(isCorrect) {
+      state.isAnswered = true;
+      const input = document.getElementById('answer-input');
+      input.disabled = true;
+      
+      input.classList.remove('border-slate-200');
+      if (isCorrect) {
+        input.classList.add('border-green-400', 'bg-green-50', 'text-green-600');
+      } else {
+        input.classList.add('border-red-400', 'bg-red-50', 'text-red-600');
+      }
+      
+      document.getElementById('btn-slash').classList.add('hidden');
+      document.getElementById('btn-minus').classList.add('hidden');
+
+      document.getElementById('submit-btn').classList.add('hidden');
+      const nextBtn = document.getElementById('next-btn');
+      nextBtn.classList.remove('hidden');
+      document.getElementById('attempts-container').classList.add('hidden');
+      
+      document.getElementById('next-btn-text').innerText = (state.currentIndex < state.questions.length - 1) ? 'Next Question' : 'See Results';
+      nextBtn.focus();
+    }
+
+    function handleNext() {
+      if (state.currentIndex < state.questions.length - 1) {
+        state.currentIndex++;
+        loadQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function finishQuiz() {
+      const percentage = Math.round((state.score / state.questions.length) * 100);
+      
+      document.getElementById('final-score').innerText = state.score;
+      document.getElementById('final-total').innerText = state.questions.length;
+      document.getElementById('final-percentage').innerText = `Total Correct Answers (${percentage}%)`;
+      
+      const msgEl = document.getElementById('result-message');
+      const iconCont = document.getElementById('result-icon-container');
+      const icon = document.getElementById('result-icon');
+      
+      if (percentage >= 90) {
+        msgEl.innerText = "Outstanding!";
+        iconCont.className = "w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-4 bg-green-100 text-green-600 shadow-inner";
+        icon.className = "fa-solid fa-trophy text-4xl sm:text-5xl";
+      } else if (percentage >= 70) {
+        msgEl.innerText = "Great job!";
+        iconCont.className = "w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-4 bg-blue-100 text-blue-600 shadow-inner";
+        icon.className = "fa-solid fa-thumbs-up text-4xl sm:text-5xl";
+      } else {
+        msgEl.innerText = "Good effort!";
+        iconCont.className = "w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-4 bg-slate-200 text-slate-500 shadow-inner";
+        icon.className = "fa-solid fa-star text-4xl sm:text-5xl";
+      }
+
+      // Populate Detailed Stats
+      const grid = document.getElementById('stats-grid');
+      grid.innerHTML = '';
+      SKILLS.forEach(skill => {
+        const totalKey = `${skill.id}Total`;
+        const scoreKey = `${skill.id}Score`;
+        if(state.stats[totalKey] > 0) {
+           const div = document.createElement('div');
+           div.className = "flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm";
+           div.innerHTML = `<span class="flex items-center"><i class="fa-solid ${skill.icon} w-5 text-slate-400 mr-2 text-center"></i> ${skill.label}</span> <span class="text-blue-600 font-black">${state.stats[scoreKey]} / ${state.stats[totalKey]}</span>`;
+           grid.appendChild(div);
+        }
+      });
+
+      showScreen('results');
+      saveToGoogleSheets();
+    }
+
+    function saveToGoogleSheets() {
+      const savingIndicator = document.getElementById('saving-indicator');
+      savingIndicator.classList.remove('hidden');
+      
+      const activeModesStr = SKILLS.filter(s => config.modes.includes(s.id)).map(s => s.label).join(', ');
+
+      const payload = {
+        date: new Date().toLocaleString(),
+        userName: document.getElementById('user-name').value.trim(),
+        activeModes: activeModesStr,
+        totalScore: state.score,
+        totalQuestions: state.questions.length,
+        stats: state.stats
+      };
+
+      if (typeof google !== 'undefined' && google.script) {
+        google.script.run
+          .withSuccessHandler(() => {
+            savingIndicator.innerHTML = '<i class="fa-solid fa-check mr-2"></i> Saved securely to spreadsheet!';
+            savingIndicator.className = "mt-5 text-sm text-green-600 font-medium flex items-center justify-center bg-green-50 py-2 rounded-lg";
+          })
+          .withFailureHandler((err) => {
+            savingIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-2"></i> Failed to save. Check connection.';
+            savingIndicator.className = "mt-5 text-sm text-red-600 font-medium flex items-center justify-center bg-red-50 py-2 rounded-lg";
+            console.error(err);
+          })
+          .saveResults(payload);
+      } else {
+        savingIndicator.innerText = "Local test. Save skipped.";
+        savingIndicator.className = "mt-5 text-sm text-slate-500 font-medium flex items-center justify-center";
+      }
+    }
+
+    function showScreen(screenId) {
+      ['setup', 'playing', 'results'].forEach(id => {
+        document.getElementById(`${id}-screen`).classList.add('hidden');
+      });
+      document.getElementById(`${screenId}-screen`).classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
